@@ -1,0 +1,134 @@
+{
+  "R5CN20CX95Y": {
+    "size": "1440x3200",
+    "dpi": "640",
+    "launcher": "com.sec.android.app.launcher/.activities.LauncherActivity",
+    "orientation": 0,
+    "globals": {
+      "policy_control": null,
+      "display_cutout_force_fullscreen": null,
+      "force_fullscreen": null,
+      "desktop_mode": null,
+      "desktop_mode_force_resizable": null,
+      "stay_on_while_plugged_in": null
+    },
+    "system": {
+      "user_rotation": null,
+      "accelerometer_rotation": null
+    },
+    "secure": {
+      "show_ime_with_hard_keyboard": null
+    },
+    "orig_timeout": "30000"
+  },
+  "R5CWB1KLEQZ": {
+    "size": "1440x3088",
+    "dpi": "600",
+    "launcher": "com.sec.android.app.launcher/.activities.LauncherActivity",
+    "orientation": 0,
+    "globals": {
+      "policy_control": null,
+      "display_cutout_force_fullscreen": null,
+      "force_fullscreen": null,
+      "desktop_mode": null,
+      "desktop_mode_force_resizable": null,
+      "stay_on_while_plugged_in": "0"
+    },
+    "system": {
+      "user_rotation": "0",
+      "accelerometer_rotation": null
+    },
+    "secure": {
+      "show_ime_with_hard_keyboard": "0"
+    },
+    "orig_timeout": "120000"
+  },
+  "192.168.2.102:5555": {
+    "size": "1440x3200",
+    "dpi": "640",
+    "launcher": "com.sec.android.app.launcher/.activities.LauncherActivity",
+    "orientation": 0,
+    "globals": {
+      "policy_control": null,
+      "display_cutout_force_fullscreen": null,
+      "force_fullscreen": null,
+      "desktop_mode": null,
+      "desktop_mode_force_resizable": null,
+      "stay_on_while_plugged_in": "0"
+    },
+    "system": {
+      "user_rotation": "0",
+      "accelerometer_rotation": null
+    },
+    "secure": {
+      "show_ime_with_hard_keyboard": "0"
+    },
+    "orig_timeout": "30000"
+  },
+  "192.168.2.101:5555": {
+    "size": "1440x3088",
+    "dpi": "640",
+    "launcher": "com.sec.android.app.launcher/.activities.LauncherActivity",
+    "orientation": 0,
+    "globals": {
+      "policy_control": null,
+      "display_cutout_force_fullscreen": null,
+      "force_fullscreen": null,
+      "desktop_mode": null,
+      "desktop_mode_force_resizable": null,
+      "stay_on_while_plugged_in": "0"
+    },
+    "system": {
+      "user_rotation": "0",
+      "accelerometer_rotation": null
+    },
+    "secure": {
+      "show_ime_with_hard_keyboard": "0"
+    },
+    "orig_timeout": "30000"
+  },
+  "47S5T20C10012770": {
+    "size": "1176x2400",
+    "dpi": "320",
+    "launcher": "com.huawei.android.launcher/.Launcher",
+    "orientation": 0,
+    "globals": {
+      "policy_control": null,
+      "display_cutout_force_fullscreen": null,
+      "force_fullscreen": null,
+      "desktop_mode": "0",
+      "desktop_mode_force_resizable": "0",
+      "stay_on_while_plugged_in": "0"
+    },
+    "system": {
+      "user_rotation": "0",
+      "accelerometer_rotation": null
+    },
+    "secure": {
+      "show_ime_with_hard_keyboard": "0"
+    },
+    "orig_timeout": "30000"
+  },
+  "HA1LWB1S": {
+    "size": "1600x2560",
+    "dpi": "320",
+    "launcher": "com.zui.launcher/.drawer.NormalLauncher",
+    "orientation": 0,
+    "globals": {
+      "policy_control": null,
+      "display_cutout_force_fullscreen": null,
+      "force_fullscreen": null,
+      "desktop_mode": null,
+      "desktop_mode_force_resizable": null,
+      "stay_on_while_plugged_in": "0"
+    },
+    "system": {
+      "user_rotation": "0",
+      "accelerometer_rotation": null
+    },
+    "secure": {
+      "show_ime_with_hard_keyboard": null
+    },
+    "orig_timeout": "30000"
+  }
+}

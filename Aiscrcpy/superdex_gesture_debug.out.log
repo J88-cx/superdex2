@@ -1,0 +1,73 @@
+ℹ️ 已启用本地键盘映射转发。
+ℹ️ 已启用鼠标快捷键兜底。
+RegisterPointerInputTarget(PT_TOUCHPAD) failed: err=5
+RegisterTouchpadCapableWindow succeeded
+Raw digitizer input window enabled
+Superdex clean launch prepared (before virtual display): R5CN20CX95Y
+ℹ️ 已切换到 scrcpy 虚拟屏显示模式，显示 ID：86（R5CN20CX95Y）
+ℹ️ 键盘模式：映射转发（QtScrcpy 风格，附着 UHID 键盘）R5CN20CX95Y
+ℹ️ Ctrl 组合键交由附着键盘处理：R5CN20CX95Y
+✅ scrcpy 已启动（R5CN20CX95Y）。拖拽文件到 scrcpy 窗口即可传输到 /sdcard/Download
+Raw touch frame: device=TOUCH_PAD, active=1, last=0, released=0, active_ids=[6422529]
+Raw touch frame: device=TOUCH_PAD, active=3, last=1, released=0, active_ids=[6422529, 1, 2]
+Touch gesture live trigger: fingers=3, action=hotkey, score=73.7
+Touch gesture matched: hotkey (3指上滑, score=73.7)
+Fixed gesture executing: hotkey, payload={'keys': ['win', 'tab']}
+SendInput result: requested=1, sent=1, ok=True
+SendInput result: requested=1, sent=1, ok=True
+SendInput result: requested=1, sent=1, ok=True
+SendInput result: requested=1, sent=1, ok=True
+Raw touch frame: device=TOUCH_PAD, active=1, last=3, released=2, active_ids=[1]
+Raw touch frame: device=TOUCH_PAD, active=1, last=3, released=0, active_ids=[1]
+Raw touch frame: device=TOUCH_PAD, active=1, last=3, released=0, active_ids=[1]
+Raw touch frame: device=TOUCH_PAD, active=0, last=3, released=1, active_ids=[]
+Raw touch release completed after live trigger
+Raw touch frame: device=TOUCH_PAD, active=2, last=0, released=0, active_ids=[6422529, 1]
+Raw touch frame: device=TOUCH_PAD, active=3, last=2, released=0, active_ids=[6422529, 1, 2]
+Touch gesture live trigger: fingers=3, action=hotkey, score=99.9
+Touch gesture matched: hotkey (3指上滑, score=99.9)
+Fixed gesture executing: hotkey, payload={'keys': ['win', 'tab']}
+SendInput result: requested=1, sent=1, ok=True
+SendInput result: requested=1, sent=1, ok=True
+SendInput result: requested=1, sent=1, ok=True
+SendInput result: requested=1, sent=1, ok=True
+Raw touch frame: device=TOUCH_PAD, active=2, last=3, released=1, active_ids=[6422529, 2]
+Raw touch frame: device=TOUCH_PAD, active=0, last=3, released=2, active_ids=[]
+Raw touch release completed after live trigger
+Raw touch frame: device=TOUCH_PAD, active=2, last=0, released=0, active_ids=[6422529, 1]
+Raw touch frame: device=TOUCH_PAD, active=3, last=2, released=0, active_ids=[6422529, 1, 2]
+Touch gesture live trigger: fingers=3, action=hotkey, score=94.6
+Touch gesture matched: hotkey (3指上滑, score=94.6)
+Fixed gesture executing: hotkey, payload={'keys': ['win', 'tab']}
+SendInput result: requested=1, sent=1, ok=True
+SendInput result: requested=1, sent=1, ok=True
+SendInput result: requested=1, sent=1, ok=True
+SendInput result: requested=1, sent=1, ok=True
+Raw touch frame: device=TOUCH_PAD, active=2, last=3, released=1, active_ids=[6422529, 1]
+Raw touch frame: device=TOUCH_PAD, active=0, last=3, released=2, active_ids=[]
+Raw touch release completed after live trigger
+Raw touch frame: device=TOUCH_PAD, active=4, last=0, released=0, active_ids=[6422529, 1, 2, 3]
+Touch gesture live trigger: fingers=4, action=activate_window_class, score=99.2
+Touch gesture matched: activate_window_class (4指上滑, score=99.2)
+Fixed gesture executing: activate_window_class, payload={'class_name': 'SDL_app', 'caption': '', 'is_regex': True, 'timeout_ms': 0}
+SendInput result: requested=2, sent=2, ok=True
+SendInput result: requested=2, sent=2, ok=True
+SendInput result: requested=2, sent=2, ok=True
+Raw touch frame: device=TOUCH_PAD, active=2, last=4, released=2, active_ids=[6422529, 2]
+Raw touch frame: device=TOUCH_PAD, active=0, last=4, released=2, active_ids=[]
+Raw touch release completed after live trigger
+Activate window class: class=SDL_app, caption=, regex=True, ok=True, target=(hwnd=395972, class='SDL_app', title='Superdex R5CN20CX95Y', visible=True, iconic=False, rect=(0, 0, 2560, 1600), pid=32452), foreground=(hwnd=395972, class='SDL_app', title='Superdex R5CN20CX95Y', visible=True, iconic=False, rect=(0, 0, 2560, 1600), pid=32452)
+Activate window post retry: already visible, target=(hwnd=395972, class='SDL_app', title='Superdex R5CN20CX95Y', visible=True, iconic=False, rect=(0, 0, 2560, 1600), pid=32452)
+Activate window post retry: already visible, target=(hwnd=395972, class='SDL_app', title='Superdex R5CN20CX95Y', visible=True, iconic=False, rect=(0, 0, 2560, 1600), pid=32452)
+Activate window post retry: already visible, target=(hwnd=395972, class='SDL_app', title='Superdex R5CN20CX95Y', visible=True, iconic=False, rect=(0, 0, 2560, 1600), pid=32452)
+Raw touch frame: device=TOUCH_PAD, active=1, last=0, released=0, active_ids=[6422529]
+Raw touch frame: device=TOUCH_PAD, active=2, last=1, released=0, active_ids=[6422529, 1]
+Raw touch frame: device=TOUCH_PAD, active=4, last=2, released=0, active_ids=[6422529, 1, 2, 3]
+Touch gesture live trigger: fingers=4, action=hotkey, score=90.9
+Touch gesture matched: hotkey (4指下滑, score=90.9)
+Fixed gesture executing: hotkey, payload={'keys': ['win', 'd']}
+SendInput result: requested=1, sent=1, ok=True
+SendInput result: requested=1, sent=1, ok=True
+SendInput result: requested=1, sent=1, ok=True
+SendInput result: requested=1, sent=1, ok=True
+Activate window post retry: cancelled by newer gesture action

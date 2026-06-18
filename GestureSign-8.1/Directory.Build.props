@@ -1,0 +1,11 @@
+<Project>
+  <PropertyGroup>
+    <!-- Only add Windows.winmd reference when Windows SDK is available -->
+  </PropertyGroup>
+  <ItemGroup Condition="Exists('$(WindowsSdkDir)\UnionMetadata\Windows.winmd')">
+    <Reference Include="Windows">
+      <HintPath>$(WindowsSdkDir)\UnionMetadata\Windows.winmd</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+</Project>
