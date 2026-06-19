@@ -3966,8 +3966,8 @@ class SuperdexGUI(QtWidgets.QWidget):
         super().__init__()
         self.setAttribute(QtCore.Qt.WA_NativeWindow, True)
         self.setWindowTitle("Superdex 设备管理器")
-        self.resize(680, 720)
-        self.setMinimumSize(560, 620)
+        self.resize(720, 760)
+        self.setMinimumSize(640, 680)
         self.tray_icon = None
         self.tray_notice_shown = False
         self.exit_requested = False
@@ -3987,8 +3987,9 @@ class SuperdexGUI(QtWidgets.QWidget):
         self.device_list = QtWidgets.QListWidget()
         self.device_list.setObjectName("deviceList")
         self.device_list.setAlternatingRowColors(False)
-        self.device_list.setSpacing(8)
+        self.device_list.setSpacing(10)
         self.device_list.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
+        self.device_list.setUniformItemSizes(True)
         self.display_mode_label = QtWidgets.QLabel("连接模式")
         self.display_mode_label.setObjectName("fieldLabel")
         self.display_mode_combo = QtWidgets.QComboBox()
@@ -4001,6 +4002,14 @@ class SuperdexGUI(QtWidgets.QWidget):
         self.screen_on_btn = QtWidgets.QPushButton("仅打开手机屏幕")
         self.connect_btn = QtWidgets.QPushButton("连接选中设备")
         self.connect_btn.setObjectName("primaryButton")
+        for button in (
+            self.refresh_btn,
+            self.autostart_btn,
+            self.screen_off_btn,
+            self.screen_on_btn,
+            self.connect_btn,
+        ):
+            button.setCursor(QtCore.Qt.PointingHandCursor)
         self.apply_modern_style()
         for widget in (
             self,
@@ -4017,22 +4026,26 @@ class SuperdexGUI(QtWidgets.QWidget):
         self.setFocusPolicy(QtCore.Qt.StrongFocus)
         app = QtWidgets.QApplication.instance()
         if app is not None:
+            app.setFont(QtGui.QFont("Microsoft YaHei UI", 11))
             app.installEventFilter(self)
 
         layout = QtWidgets.QVBoxLayout()
-        layout.setContentsMargins(24, 24, 24, 24)
-        layout.setSpacing(18)
+        layout.setContentsMargins(28, 28, 28, 24)
+        layout.setSpacing(20)
 
         header_layout = QtWidgets.QHBoxLayout()
-        header_layout.setSpacing(14)
+        header_layout.setSpacing(16)
         icon_label = QtWidgets.QLabel()
         icon_label.setObjectName("appIcon")
-        icon_label.setPixmap(self.app_icon.pixmap(42, 42))
+        icon_label.setFixedSize(64, 64)
+        icon_label.setAlignment(QtCore.Qt.AlignCenter)
+        icon_label.setPixmap(self.app_icon.pixmap(44, 44))
         title_layout = QtWidgets.QVBoxLayout()
-        title_layout.setSpacing(2)
+        title_layout.setSpacing(5)
         title = QtWidgets.QLabel("Superdex 设备管理器")
         title.setObjectName("titleLabel")
         subtitle = QtWidgets.QLabel("连接设备、管理投屏模式，并快速控制手机屏幕")
+        subtitle.setWordWrap(True)
         subtitle.setObjectName("subtitleLabel")
         title_layout.addWidget(title)
         title_layout.addWidget(subtitle)
@@ -4043,8 +4056,8 @@ class SuperdexGUI(QtWidgets.QWidget):
         device_card = QtWidgets.QFrame()
         device_card.setObjectName("card")
         device_card_layout = QtWidgets.QVBoxLayout(device_card)
-        device_card_layout.setContentsMargins(18, 18, 18, 18)
-        device_card_layout.setSpacing(12)
+        device_card_layout.setContentsMargins(20, 20, 20, 20)
+        device_card_layout.setSpacing(14)
         device_title = QtWidgets.QLabel("已连接设备")
         device_title.setObjectName("sectionTitle")
         device_card_layout.addWidget(device_title)
@@ -4054,15 +4067,15 @@ class SuperdexGUI(QtWidgets.QWidget):
         mode_card = QtWidgets.QFrame()
         mode_card.setObjectName("card")
         mode_layout = QtWidgets.QHBoxLayout(mode_card)
-        mode_layout.setContentsMargins(18, 16, 18, 16)
-        mode_layout.setSpacing(14)
+        mode_layout.setContentsMargins(20, 18, 20, 18)
+        mode_layout.setSpacing(16)
         mode_layout.addWidget(self.display_mode_label)
         mode_layout.addWidget(self.display_mode_combo, 1)
         layout.addWidget(mode_card)
 
         secondary_actions = QtWidgets.QGridLayout()
-        secondary_actions.setHorizontalSpacing(12)
-        secondary_actions.setVerticalSpacing(12)
+        secondary_actions.setHorizontalSpacing(14)
+        secondary_actions.setVerticalSpacing(14)
         secondary_actions.addWidget(self.refresh_btn, 0, 0)
         secondary_actions.addWidget(self.autostart_btn, 0, 1)
         secondary_actions.addWidget(self.screen_off_btn, 1, 0)
@@ -4097,46 +4110,46 @@ class SuperdexGUI(QtWidgets.QWidget):
                 background: #f5f7fb;
                 color: #172033;
                 font-family: "Microsoft YaHei UI", "Segoe UI", sans-serif;
-                font-size: 15px;
+                font-size: 17px;
             }
             QLabel#titleLabel {
                 color: #0f172a;
-                font-size: 24px;
+                font-size: 28px;
                 font-weight: 700;
                 background: transparent;
             }
             QLabel#subtitleLabel {
                 color: #64748b;
-                font-size: 13px;
+                font-size: 15px;
                 background: transparent;
             }
             QLabel#sectionTitle, QLabel#fieldLabel {
                 color: #334155;
-                font-size: 14px;
+                font-size: 16px;
                 font-weight: 700;
                 background: transparent;
             }
             QLabel#appIcon {
                 background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #dff7ff, stop:1 #e7f8ef);
-                border-radius: 14px;
-                padding: 8px;
+                border-radius: 20px;
+                padding: 10px;
             }
             QFrame#card {
                 background: #ffffff;
                 border: 1px solid #e2e8f0;
-                border-radius: 18px;
+                border-radius: 20px;
             }
             QListWidget#deviceList {
                 background: #f8fafc;
                 border: 1px solid #e2e8f0;
-                border-radius: 14px;
-                padding: 8px;
+                border-radius: 20px;
+                padding: 10px;
                 outline: none;
             }
             QListWidget#deviceList::item {
-                min-height: 38px;
-                padding: 8px 12px;
-                border-radius: 10px;
+                min-height: 54px;
+                padding: 10px 16px;
+                border-radius: 12px;
                 color: #1e293b;
             }
             QListWidget#deviceList::item:hover {
@@ -4144,27 +4157,39 @@ class SuperdexGUI(QtWidgets.QWidget):
                 color: #075985;
             }
             QListWidget#deviceList::item:selected {
-                background: #16a34a;
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #22c55e, stop:1 #12b981);
                 color: #ffffff;
             }
             QComboBox {
                 background: #ffffff;
                 border: 1px solid #cbd5e1;
-                border-radius: 12px;
-                padding: 9px 12px;
-                min-height: 22px;
+                border-radius: 14px;
+                padding: 12px 16px;
+                min-height: 28px;
             }
             QComboBox:hover, QComboBox:focus {
                 border-color: #22c55e;
             }
+            QComboBox::drop-down {
+                border: 0;
+                width: 36px;
+            }
+            QComboBox QAbstractItemView {
+                background: #ffffff;
+                border: 1px solid #cbd5e1;
+                border-radius: 12px;
+                padding: 6px;
+                selection-background-color: #dcfce7;
+                selection-color: #166534;
+            }
             QPushButton {
                 background: #ffffff;
                 border: 1px solid #cbd5e1;
-                border-radius: 13px;
+                border-radius: 15px;
                 color: #334155;
                 font-weight: 600;
-                padding: 11px 14px;
-                min-height: 22px;
+                padding: 14px 18px;
+                min-height: 28px;
             }
             QPushButton:hover {
                 background: #ecfeff;
@@ -4183,8 +4208,8 @@ class SuperdexGUI(QtWidgets.QWidget):
                 background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #22c55e, stop:1 #06b6d4);
                 border: 0;
                 color: white;
-                font-size: 16px;
-                padding: 14px 18px;
+                font-size: 18px;
+                padding: 16px 20px;
             }
             QPushButton#primaryButton:hover {
                 background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #16a34a, stop:1 #0891b2);
