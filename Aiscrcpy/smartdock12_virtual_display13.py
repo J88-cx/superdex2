@@ -3966,7 +3966,8 @@ class SuperdexGUI(QtWidgets.QWidget):
         super().__init__()
         self.setAttribute(QtCore.Qt.WA_NativeWindow, True)
         self.setWindowTitle("Superdex 设备管理器")
-        self.resize(600, 600)
+        self.setMinimumSize(780, 760)
+        self.resize(820, 800)
         self.tray_icon = None
         self.tray_notice_shown = False
         self.exit_requested = False
@@ -3984,7 +3985,11 @@ class SuperdexGUI(QtWidgets.QWidget):
         self.refresh_thread = None
 
         self.device_list = QtWidgets.QListWidget()
-        self.display_mode_label = QtWidgets.QLabel("连接模式：")
+        self.device_list.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
+        self.device_list.setUniformItemSizes(True)
+        self.device_list.setMinimumHeight(348)
+        self.device_list.setAlternatingRowColors(True)
+        self.display_mode_label = QtWidgets.QLabel("连接模式")
         self.display_mode_combo = QtWidgets.QComboBox()
         self.display_mode_combo.addItem("虚拟屏模式（默认）", SCRCPY_MODE_VIRTUAL)
         self.display_mode_combo.addItem("镜像模式", SCRCPY_MODE_MIRROR)
@@ -3993,6 +3998,8 @@ class SuperdexGUI(QtWidgets.QWidget):
         self.screen_off_btn = QtWidgets.QPushButton("仅熄灭手机屏幕")
         self.screen_on_btn = QtWidgets.QPushButton("仅打开手机屏幕")
         self.connect_btn = QtWidgets.QPushButton("连接选中设备")
+        self.connect_btn.setObjectName("connectButton")
+        self.display_mode_label.setObjectName("fieldLabel")
         for widget in (
             self,
             self.device_list,
@@ -4010,17 +4017,69 @@ class SuperdexGUI(QtWidgets.QWidget):
         if app is not None:
             app.installEventFilter(self)
 
+        self.apply_modern_style()
+
         layout = QtWidgets.QVBoxLayout()
-        layout.addWidget(QtWidgets.QLabel("已连接设备："))
-        layout.addWidget(self.device_list)
-        mode_layout = QtWidgets.QHBoxLayout()
+        layout.setContentsMargins(28, 28, 28, 28)
+        layout.setSpacing(20)
+
+        header_layout = QtWidgets.QHBoxLayout()
+        header_layout.setSpacing(16)
+        icon_label = QtWidgets.QLabel()
+        icon_label.setObjectName("appIcon")
+        icon_label.setPixmap(self.app_icon.pixmap(58, 58))
+        icon_label.setFixedSize(72, 72)
+        icon_label.setAlignment(QtCore.Qt.AlignCenter)
+
+        title_layout = QtWidgets.QVBoxLayout()
+        title_layout.setSpacing(6)
+        title_label = QtWidgets.QLabel("Superdex 设备管理器")
+        title_label.setObjectName("titleLabel")
+        subtitle_label = QtWidgets.QLabel("连接设备、管理连接模式，并快速控制手机屏幕")
+        subtitle_label.setObjectName("subtitleLabel")
+        title_layout.addWidget(title_label)
+        title_layout.addWidget(subtitle_label)
+
+        status_badge = QtWidgets.QLabel("  ● 设备管理  ")
+        status_badge.setObjectName("statusBadge")
+        status_badge.setAlignment(QtCore.Qt.AlignCenter)
+        header_layout.addWidget(icon_label)
+        header_layout.addLayout(title_layout, 1)
+        header_layout.addWidget(status_badge)
+        layout.addLayout(header_layout)
+
+        devices_card = QtWidgets.QFrame()
+        devices_card.setObjectName("card")
+        devices_layout = QtWidgets.QVBoxLayout(devices_card)
+        devices_layout.setContentsMargins(24, 22, 24, 24)
+        devices_layout.setSpacing(14)
+        devices_title = QtWidgets.QLabel("已连接设备")
+        devices_title.setObjectName("sectionTitle")
+        devices_hint = QtWidgets.QLabel("支持多选，列表区域至少可完整显示 6 台设备")
+        devices_hint.setObjectName("hintLabel")
+        devices_layout.addWidget(devices_title)
+        devices_layout.addWidget(devices_hint)
+        devices_layout.addWidget(self.device_list)
+        layout.addWidget(devices_card, 1)
+
+        mode_card = QtWidgets.QFrame()
+        mode_card.setObjectName("card")
+        mode_layout = QtWidgets.QHBoxLayout(mode_card)
+        mode_layout.setContentsMargins(24, 22, 24, 22)
+        mode_layout.setSpacing(18)
         mode_layout.addWidget(self.display_mode_label)
         mode_layout.addWidget(self.display_mode_combo, 1)
-        layout.addLayout(mode_layout)
-        layout.addWidget(self.refresh_btn)
-        layout.addWidget(self.autostart_btn)
-        layout.addWidget(self.screen_off_btn)
-        layout.addWidget(self.screen_on_btn)
+        layout.addWidget(mode_card)
+
+        actions_layout = QtWidgets.QGridLayout()
+        actions_layout.setHorizontalSpacing(16)
+        actions_layout.setVerticalSpacing(16)
+        actions_layout.addWidget(self.refresh_btn, 0, 0)
+        actions_layout.addWidget(self.autostart_btn, 0, 1)
+        actions_layout.addWidget(self.screen_off_btn, 1, 0)
+        actions_layout.addWidget(self.screen_on_btn, 1, 1)
+        layout.addLayout(actions_layout)
+
         layout.addWidget(self.connect_btn)
         self.setLayout(layout)
 
@@ -4043,6 +4102,103 @@ class SuperdexGUI(QtWidgets.QWidget):
         ).start()
         self.setup_tray_icon()
         QtCore.QTimer.singleShot(0, self.refresh_devices)
+
+    def apply_modern_style(self):
+        self.setStyleSheet("""
+            QWidget {
+                background: #f3f8ff;
+                color: #10233f;
+                font-family: 'Microsoft YaHei UI', 'Segoe UI', Arial, sans-serif;
+                font-size: 16px;
+            }
+            #appIcon {
+                background: #dff8f1;
+                border-radius: 20px;
+            }
+            #titleLabel {
+                font-size: 31px;
+                font-weight: 800;
+                color: #061b3a;
+            }
+            #subtitleLabel, #hintLabel {
+                color: #536b8d;
+                font-size: 15px;
+            }
+            #statusBadge {
+                background: #e8fff1;
+                border: 1px solid #8de6ad;
+                border-radius: 16px;
+                color: #07883e;
+                font-weight: 700;
+                padding: 7px 12px;
+            }
+            #card {
+                background: #ffffff;
+                border: 1px solid #d7e3f3;
+                border-radius: 22px;
+            }
+            #sectionTitle, #fieldLabel {
+                font-size: 17px;
+                font-weight: 800;
+            }
+            QListWidget {
+                background: #f8fbff;
+                border: 1px solid #dbe6f4;
+                border-radius: 18px;
+                padding: 10px;
+                outline: 0;
+            }
+            QListWidget::item {
+                min-height: 48px;
+                border-radius: 12px;
+                padding: 0 16px;
+                margin: 4px;
+                font-size: 17px;
+            }
+            QListWidget::item:alternate {
+                background: #f0f6ff;
+            }
+            QListWidget::item:selected {
+                background: #dff8ef;
+                color: #063d2f;
+                border: 1px solid #26c777;
+            }
+            QComboBox {
+                background: #ffffff;
+                border: 1px solid #25c86f;
+                border-radius: 14px;
+                min-height: 52px;
+                padding: 0 16px;
+                font-size: 17px;
+            }
+            QPushButton {
+                background: #ffffff;
+                border: 1px solid #c9d8ea;
+                border-radius: 15px;
+                min-height: 52px;
+                font-size: 17px;
+                font-weight: 800;
+                color: #143154;
+            }
+            QPushButton:hover {
+                background: #f5fbff;
+                border-color: #80b8ff;
+            }
+            QPushButton:pressed {
+                background: #eaf4ff;
+            }
+            QPushButton:disabled {
+                color: #91a0b5;
+                background: #eef3f9;
+            }
+            QPushButton#connectButton {
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #29ce66, stop:1 #10b7d5);
+                color: #ffffff;
+                border: 0;
+                min-height: 64px;
+                border-radius: 18px;
+            }
+        """)
 
     def eventFilter(self, obj, event):
         if event.type() in (
@@ -4171,6 +4327,8 @@ class SuperdexGUI(QtWidgets.QWidget):
         self.device_list.clear()
         for device_id, label in devices:
             item = QtWidgets.QListWidgetItem(label)
+            item.setSizeHint(QtCore.QSize(0, 52))
+            item.setIcon(self.style().standardIcon(QtWidgets.QStyle.SP_DriveNetIcon))
             self.device_list.addItem(item)
             if device_id in selected:
                 item.setSelected(True)
