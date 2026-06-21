@@ -53,6 +53,7 @@ SCRCPY_SHORTCUT_MOD = "rctrl"
 SCRCPY_MODE_VIRTUAL = "virtual"
 SCRCPY_MODE_MIRROR = "mirror"
 SCRCPY_MODE_DEFAULT = SCRCPY_MODE_VIRTUAL
+SCRCPY_MODE_MIXED = "__mixed__"
 USE_SCRCPY_VIRTUAL_DISPLAY = True
 VIRTUAL_DISPLAY_TARGET_SHORT_DP = 960
 VIRTUAL_DISPLAY_WAIT_TIMEOUT = 8.0
@@ -132,7 +133,32 @@ def get_scrcpy_display_mode():
     return sanitize_scrcpy_mode(load_app_settings().get("scrcpy_display_mode"))
 
 
-def use_scrcpy_virtual_display():
+def get_device_mode_settings(settings=None):
+    settings = load_app_settings() if settings is None else settings
+    modes = settings.get("device_scrcpy_display_modes", {})
+    return modes if isinstance(modes, dict) else {}
+
+
+def get_device_scrcpy_display_mode(device_id):
+    modes = get_device_mode_settings()
+    if device_id in modes:
+        return sanitize_scrcpy_mode(modes.get(device_id))
+    return get_scrcpy_display_mode()
+
+
+def set_device_scrcpy_display_mode(device_id, mode):
+    mode = sanitize_scrcpy_mode(mode)
+    settings = load_app_settings()
+    modes = dict(get_device_mode_settings(settings))
+    modes[device_id] = mode
+    settings["device_scrcpy_display_modes"] = modes
+    save_app_settings(settings)
+    return mode
+
+
+def use_scrcpy_virtual_display(device_id=None):
+    if device_id:
+        return get_device_scrcpy_display_mode(device_id) == SCRCPY_MODE_VIRTUAL
     return get_scrcpy_display_mode() == SCRCPY_MODE_VIRTUAL
 
 
@@ -3790,7 +3816,7 @@ class DeviceManager:
         with self.lock:
             if device_id in self.scrcpy_virtual_display_modes:
                 return self.scrcpy_virtual_display_modes[device_id]
-        return USE_SCRCPY_VIRTUAL_DISPLAY
+        return use_scrcpy_virtual_display(device_id)
 
     def pop_scrcpy_virtual_display_mode(self, device_id):
         with self.lock:
@@ -3991,7 +4017,8 @@ class SuperdexGUI(QtWidgets.QWidget):
         self.device_list.setAlternatingRowColors(True)
         self.display_mode_label = QtWidgets.QLabel("连接模式")
         self.display_mode_combo = QtWidgets.QComboBox()
-        self.display_mode_combo.addItem("虚拟屏模式（默认）", SCRCPY_MODE_VIRTUAL)
+        self.display_mode_combo.addItem("多设备：保持各自记忆", SCRCPY_MODE_MIXED)
+        self.display_mode_combo.addItem("虚拟屏模式", SCRCPY_MODE_VIRTUAL)
         self.display_mode_combo.addItem("镜像模式", SCRCPY_MODE_MIRROR)
         self.refresh_btn = QtWidgets.QPushButton("刷新设备")
         self.autostart_btn = QtWidgets.QPushButton("开启开机自启")
@@ -4055,7 +4082,7 @@ class SuperdexGUI(QtWidgets.QWidget):
         devices_layout.setSpacing(14)
         devices_title = QtWidgets.QLabel("已连接设备")
         devices_title.setObjectName("sectionTitle")
-        devices_hint = QtWidgets.QLabel("支持多选，列表区域至少可完整显示 6 台设备")
+        devices_hint = QtWidgets.QLabel("支持多选；每台设备都会独立记忆连接模式")
         devices_hint.setObjectName("hintLabel")
         devices_layout.addWidget(devices_title)
         devices_layout.addWidget(devices_hint)
@@ -4326,13 +4353,27 @@ class SuperdexGUI(QtWidgets.QWidget):
         selected = self.get_selected_devices()
         self.device_list.clear()
         for device_id, label in devices:
-            item = QtWidgets.QListWidgetItem(label)
+            remembered_mode = get_device_scrcpy_display_mode(device_id)
+            display_label = f"{label}  ·  {scrcpy_mode_label(remembered_mode == SCRCPY_MODE_VIRTUAL)}"
+            item = QtWidgets.QListWidgetItem(display_label)
+            item.setData(QtCore.Qt.UserRole, device_id)
+            item.setData(QtCore.Qt.UserRole + 1, label)
             item.setSizeHint(QtCore.QSize(0, 52))
             item.setIcon(self.style().standardIcon(QtWidgets.QStyle.SP_DriveNetIcon))
             self.device_list.addItem(item)
             if device_id in selected:
                 item.setSelected(True)
         self.update_selected_devices()
+
+    def update_device_item_mode_labels(self):
+        for row in range(self.device_list.count()):
+            item = self.device_list.item(row)
+            device_id = item.data(QtCore.Qt.UserRole) or item.text().split(" ")[0]
+            base_label = item.data(QtCore.Qt.UserRole + 1) or item.text().split("  ·  ", 1)[0]
+            remembered_mode = get_device_scrcpy_display_mode(device_id)
+            item.setText(
+                f"{base_label}  ·  {scrcpy_mode_label(remembered_mode == SCRCPY_MODE_VIRTUAL)}"
+            )
 
     def on_device_scan_failed(self, message):
         QtWidgets.QMessageBox.warning(self, "提示", f"设备扫描失败：{message}")
@@ -4345,13 +4386,20 @@ class SuperdexGUI(QtWidgets.QWidget):
 
     def update_selected_devices(self):
         selected = {
-            item.text().split(" ")[0] for item in self.device_list.selectedItems()
+            item.data(QtCore.Qt.UserRole) or item.text().split(" ")[0]
+            for item in self.device_list.selectedItems()
         }
         with self.selection_lock:
             self.selected_devices = selected
+        self.update_display_mode_combo()
 
     def update_display_mode_combo(self):
-        mode = get_scrcpy_display_mode()
+        selected = sorted(self.get_selected_devices())
+        if not selected:
+            mode = get_scrcpy_display_mode()
+        else:
+            selected_modes = {get_device_scrcpy_display_mode(device_id) for device_id in selected}
+            mode = selected_modes.pop() if len(selected_modes) == 1 else SCRCPY_MODE_MIXED
         index = self.display_mode_combo.findData(mode)
         if index < 0:
             index = self.display_mode_combo.findData(SCRCPY_MODE_DEFAULT)
@@ -4361,9 +4409,22 @@ class SuperdexGUI(QtWidgets.QWidget):
 
     def on_display_mode_changed(self, index):
         mode = self.display_mode_combo.itemData(index)
-        mode = set_scrcpy_display_mode(mode)
+        if mode == SCRCPY_MODE_MIXED:
+            return
+        selected = sorted(self.get_selected_devices())
+        if not selected:
+            mode = set_scrcpy_display_mode(mode)
+            label = "虚拟屏模式" if mode == SCRCPY_MODE_VIRTUAL else "镜像模式"
+            print(f"ℹ️ 已切换默认连接模式：{label}。未单独配置的设备将使用该模式。")
+            return
+
+        remembered = []
+        for device_id in selected:
+            remembered_mode = set_device_scrcpy_display_mode(device_id, mode)
+            remembered.append(f"{device_id}={scrcpy_mode_label(remembered_mode == SCRCPY_MODE_VIRTUAL)}")
+        self.update_device_item_mode_labels()
         label = "虚拟屏模式" if mode == SCRCPY_MODE_VIRTUAL else "镜像模式"
-        print(f"ℹ️ 已切换连接模式：{label}。后续连接和开机自启将使用该模式。")
+        print(f"ℹ️ 已为选中设备记忆连接模式：{label}（{', '.join(remembered)}）。")
 
     def get_autostart_shortcut_path(self):
         appdata = os.getenv("APPDATA")
@@ -4874,7 +4935,7 @@ def start_device_in_superdex(device_id, manager, require_wifi):
             print(f"❌ USB 设备不在线：{device_id}")
         return False
 
-    desired_virtual_display = use_scrcpy_virtual_display()
+    desired_virtual_display = use_scrcpy_virtual_display(device_id)
     physical_serial = get_physical_device_serial(device_id)
     manager.set_physical_serial(device_id, physical_serial)
     active_device_id = manager.get_active_device_for_physical_serial(
@@ -5237,7 +5298,7 @@ def get_keyboard_mode(device_id, sdk):
 
 def launch_scrcpy(device_id, use_virtual_display=None):
     if use_virtual_display is None:
-        use_virtual_display = use_scrcpy_virtual_display()
+        use_virtual_display = use_scrcpy_virtual_display(device_id)
     os.environ["SCRCPY_CLIPBOARD_SYNC"] = "true"
     sdk = get_device_sdk(device_id)
     keyboard_mode = get_keyboard_mode(device_id, sdk)
@@ -5617,7 +5678,7 @@ def switch_to_superdex(device_id, manager, physical_serial=None):
         return
 
     started = False
-    use_virtual_display = use_scrcpy_virtual_display()
+    use_virtual_display = use_scrcpy_virtual_display(device_id)
     manager.set_scrcpy_virtual_display_mode(device_id, use_virtual_display)
     try:
         init_state = ensure_initial_state(device_id, manager)
