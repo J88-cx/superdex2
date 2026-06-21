@@ -139,26 +139,40 @@ def get_device_mode_settings(settings=None):
     return modes if isinstance(modes, dict) else {}
 
 
-def get_device_scrcpy_display_mode(device_id):
+def get_device_mode_key(device_id, physical_serial=None):
+    physical_serial = normalize_setting_value(physical_serial)
+    if physical_serial:
+        return physical_serial
+    detected_serial = get_physical_device_serial(device_id)
+    return detected_serial or device_id
+
+
+def get_device_scrcpy_display_mode(device_id, mode_key=None):
     modes = get_device_mode_settings()
+    mode_key = mode_key or get_device_mode_key(device_id)
+    if mode_key in modes:
+        return sanitize_scrcpy_mode(modes.get(mode_key))
     if device_id in modes:
         return sanitize_scrcpy_mode(modes.get(device_id))
     return get_scrcpy_display_mode()
 
 
-def set_device_scrcpy_display_mode(device_id, mode):
+def set_device_scrcpy_display_mode(device_id, mode, mode_key=None):
     mode = sanitize_scrcpy_mode(mode)
+    mode_key = mode_key or get_device_mode_key(device_id)
     settings = load_app_settings()
     modes = dict(get_device_mode_settings(settings))
-    modes[device_id] = mode
+    modes[mode_key] = mode
+    if mode_key != device_id:
+        modes.pop(device_id, None)
     settings["device_scrcpy_display_modes"] = modes
     save_app_settings(settings)
     return mode
 
 
-def use_scrcpy_virtual_display(device_id=None):
+def use_scrcpy_virtual_display(device_id=None, mode_key=None):
     if device_id:
-        return get_device_scrcpy_display_mode(device_id) == SCRCPY_MODE_VIRTUAL
+        return get_device_scrcpy_display_mode(device_id, mode_key=mode_key) == SCRCPY_MODE_VIRTUAL
     return get_scrcpy_display_mode() == SCRCPY_MODE_VIRTUAL
 
 
@@ -3816,7 +3830,10 @@ class DeviceManager:
         with self.lock:
             if device_id in self.scrcpy_virtual_display_modes:
                 return self.scrcpy_virtual_display_modes[device_id]
-        return use_scrcpy_virtual_display(device_id)
+        return use_scrcpy_virtual_display(
+            device_id,
+            mode_key=self.physical_serials.get(device_id),
+        )
 
     def pop_scrcpy_virtual_display_mode(self, device_id):
         with self.lock:
@@ -4008,6 +4025,7 @@ class SuperdexGUI(QtWidgets.QWidget):
         )
         self.selection_lock = threading.Lock()
         self.selected_devices = set()
+        self.device_mode_keys = {}
         self.refresh_thread = None
 
         self.device_list = QtWidgets.QListWidget()
@@ -4082,7 +4100,7 @@ class SuperdexGUI(QtWidgets.QWidget):
         devices_layout.setSpacing(14)
         devices_title = QtWidgets.QLabel("已连接设备")
         devices_title.setObjectName("sectionTitle")
-        devices_hint = QtWidgets.QLabel("支持多选；每台设备都会独立记忆连接模式")
+        devices_hint = QtWidgets.QLabel("支持多选；同一台手机的有线/无线连接会共享模式记忆")
         devices_hint.setObjectName("hintLabel")
         devices_layout.addWidget(devices_title)
         devices_layout.addWidget(devices_hint)
@@ -4352,12 +4370,16 @@ class SuperdexGUI(QtWidgets.QWidget):
     def on_devices_scanned(self, devices):
         selected = self.get_selected_devices()
         self.device_list.clear()
+        self.device_mode_keys = {}
         for device_id, label in devices:
-            remembered_mode = get_device_scrcpy_display_mode(device_id)
+            mode_key = get_device_mode_key(device_id)
+            self.device_mode_keys[device_id] = mode_key
+            remembered_mode = get_device_scrcpy_display_mode(device_id, mode_key=mode_key)
             display_label = f"{label}  ·  {scrcpy_mode_label(remembered_mode == SCRCPY_MODE_VIRTUAL)}"
             item = QtWidgets.QListWidgetItem(display_label)
             item.setData(QtCore.Qt.UserRole, device_id)
             item.setData(QtCore.Qt.UserRole + 1, label)
+            item.setData(QtCore.Qt.UserRole + 2, mode_key)
             item.setSizeHint(QtCore.QSize(0, 52))
             item.setIcon(self.style().standardIcon(QtWidgets.QStyle.SP_DriveNetIcon))
             self.device_list.addItem(item)
@@ -4370,7 +4392,8 @@ class SuperdexGUI(QtWidgets.QWidget):
             item = self.device_list.item(row)
             device_id = item.data(QtCore.Qt.UserRole) or item.text().split(" ")[0]
             base_label = item.data(QtCore.Qt.UserRole + 1) or item.text().split("  ·  ", 1)[0]
-            remembered_mode = get_device_scrcpy_display_mode(device_id)
+            mode_key = item.data(QtCore.Qt.UserRole + 2) or self.device_mode_keys.get(device_id)
+            remembered_mode = get_device_scrcpy_display_mode(device_id, mode_key=mode_key)
             item.setText(
                 f"{base_label}  ·  {scrcpy_mode_label(remembered_mode == SCRCPY_MODE_VIRTUAL)}"
             )
@@ -4398,7 +4421,13 @@ class SuperdexGUI(QtWidgets.QWidget):
         if not selected:
             mode = get_scrcpy_display_mode()
         else:
-            selected_modes = {get_device_scrcpy_display_mode(device_id) for device_id in selected}
+            selected_modes = {
+                get_device_scrcpy_display_mode(
+                    device_id,
+                    mode_key=self.device_mode_keys.get(device_id),
+                )
+                for device_id in selected
+            }
             mode = selected_modes.pop() if len(selected_modes) == 1 else SCRCPY_MODE_MIXED
         index = self.display_mode_combo.findData(mode)
         if index < 0:
@@ -4420,7 +4449,8 @@ class SuperdexGUI(QtWidgets.QWidget):
 
         remembered = []
         for device_id in selected:
-            remembered_mode = set_device_scrcpy_display_mode(device_id, mode)
+            mode_key = self.device_mode_keys.get(device_id)
+            remembered_mode = set_device_scrcpy_display_mode(device_id, mode, mode_key=mode_key)
             remembered.append(f"{device_id}={scrcpy_mode_label(remembered_mode == SCRCPY_MODE_VIRTUAL)}")
         self.update_device_item_mode_labels()
         label = "虚拟屏模式" if mode == SCRCPY_MODE_VIRTUAL else "镜像模式"
@@ -4935,8 +4965,11 @@ def start_device_in_superdex(device_id, manager, require_wifi):
             print(f"❌ USB 设备不在线：{device_id}")
         return False
 
-    desired_virtual_display = use_scrcpy_virtual_display(device_id)
     physical_serial = get_physical_device_serial(device_id)
+    desired_virtual_display = use_scrcpy_virtual_display(
+        device_id,
+        mode_key=physical_serial,
+    )
     manager.set_physical_serial(device_id, physical_serial)
     active_device_id = manager.get_active_device_for_physical_serial(
         physical_serial,
@@ -5678,7 +5711,10 @@ def switch_to_superdex(device_id, manager, physical_serial=None):
         return
 
     started = False
-    use_virtual_display = use_scrcpy_virtual_display(device_id)
+    use_virtual_display = use_scrcpy_virtual_display(
+        device_id,
+        mode_key=physical_serial,
+    )
     manager.set_scrcpy_virtual_display_mode(device_id, use_virtual_display)
     try:
         init_state = ensure_initial_state(device_id, manager)
