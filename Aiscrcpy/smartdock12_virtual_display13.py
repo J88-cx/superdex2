@@ -64,6 +64,8 @@ VIRTUAL_DISPLAY_START_APP_PACKAGE = SUPERDEX_PACKAGE
 VIRTUAL_DISPLAY_FORCE_LANDSCAPE = True
 VIRTUAL_DISPLAY_IME_POLICY = "local"
 VIRTUAL_DISPLAY_WAKE_RECOVER_DELAY = 0.35
+VIRTUAL_DISPLAY_BLACK_SCREEN_SECONDS = 15
+VIRTUAL_DISPLAY_BLACK_SCREEN_RESTART_SECONDS = 30
 DEFAULT_SCREEN_OFF_TIMEOUT_MS = "30000"
 SUPERDEX_FORCED_SCREEN_OFF_TIMEOUTS = {"2147483647", "86400000"}
 KEYBOARD_MAPPING_MODE = "mapped"
@@ -1185,6 +1187,41 @@ def get_foreground_scrcpy_context(manager):
     if not device_id:
         return None, None
     return hwnd, device_id
+
+
+def get_window_for_process(proc):
+    if not is_process_running(proc):
+        return None
+
+    matches = []
+
+    def enum_windows_callback(hwnd, _):
+        try:
+            _, pid = win32process.GetWindowThreadProcessId(hwnd)
+            if pid != proc.pid:
+                return True
+            if not win32gui.IsWindowVisible(hwnd):
+                return True
+            if hasattr(win32gui, "IsIconic") and win32gui.IsIconic(hwnd):
+                return True
+            left, top, right, bottom = win32gui.GetClientRect(hwnd)
+            area = max(0, right - left) * max(0, bottom - top)
+            if area <= 0:
+                return True
+            matches.append((area, hwnd))
+        except Exception:
+            pass
+        return True
+
+    try:
+        win32gui.EnumWindows(enum_windows_callback, None)
+    except Exception:
+        return None
+
+    if not matches:
+        return None
+    matches.sort(reverse=True)
+    return matches[0][1]
 
 
 def is_window_mostly_black(hwnd):
@@ -5012,8 +5049,43 @@ def start_virtual_display_keepalive_thread(proc, device_id, manager):
     ).start()
 
 
+def restart_virtual_display_scrcpy(device_id, manager, old_proc=None):
+    if old_proc is not None and not manager.is_scrcpy_proc_current(device_id, old_proc):
+        return False
+
+    print(f"⚠️ 检测到虚拟屏持续黑屏，正在重启 scrcpy：{device_id}")
+    previous_ids = get_display_ids(device_id)
+    keep_virtual_display_device_awake(device_id)
+
+    old_proc = old_proc or manager.get_scrcpy_proc(device_id)
+    if old_proc is not None:
+        manager.set_scrcpy_proc(device_id, None)
+        stop_process(old_proc, timeout=1)
+
+    proc = launch_scrcpy(device_id, use_virtual_display=True)
+    manager.set_scrcpy_proc(device_id, proc)
+    start_scrcpy_monitor_threads(proc, device_id, manager)
+    start_virtual_display_keepalive_thread(proc, device_id, manager)
+
+    virtual_display_id = wait_for_virtual_display_id(device_id, previous_ids)
+    manager.set_virtual_display_id(device_id, virtual_display_id)
+    if virtual_display_id is None:
+        print(f"⚠️ scrcpy 已重启，但未能识别虚拟屏显示 ID：{device_id}")
+        return False
+
+    time.sleep(0.25)
+    if not launch_activity_on_display(device_id, virtual_display_id, SUPERDEX_ACTIVITY):
+        print(f"⚠️ scrcpy 重启后 Superdex 启动到虚拟屏失败，尝试恢复：{device_id}")
+        recover_virtual_display_activity(device_id, manager)
+    turn_physical_screen_off_keep_awake(device_id)
+    print(f"✅ scrcpy 虚拟屏黑屏恢复完成，显示 ID：{virtual_display_id}（{device_id}）")
+    return True
+
+
 def virtual_display_keepalive_loop(proc, device_id, manager):
     needs_display_recover = False
+    black_since = None
+    recovered_black_screen = False
     while is_process_running(proc) and manager.is_scrcpy_proc_current(device_id, proc):
         try:
             awake = is_device_awake(device_id)
@@ -5026,6 +5098,30 @@ def virtual_display_keepalive_loop(proc, device_id, manager):
             elif needs_display_recover:
                 recover_virtual_display_activity(device_id, manager)
                 needs_display_recover = False
+
+            hwnd = get_window_for_process(proc)
+            if hwnd and is_window_mostly_black(hwnd):
+                now = time.time()
+                if black_since is None:
+                    black_since = now
+                black_duration = now - black_since
+                if black_duration >= VIRTUAL_DISPLAY_BLACK_SCREEN_RESTART_SECONDS:
+                    if restart_virtual_display_scrcpy(device_id, manager, old_proc=proc):
+                        break
+                    black_since = time.time()
+                    recovered_black_screen = False
+                elif (
+                    black_duration >= VIRTUAL_DISPLAY_BLACK_SCREEN_SECONDS
+                    and not recovered_black_screen
+                ):
+                    print(f"⚠️ 检测到虚拟屏窗口持续黑屏，正在恢复画面：{device_id}")
+                    keep_virtual_display_device_awake(device_id)
+                    time.sleep(VIRTUAL_DISPLAY_WAKE_RECOVER_DELAY)
+                    recover_virtual_display_activity(device_id, manager)
+                    recovered_black_screen = True
+            else:
+                black_since = None
+                recovered_black_screen = False
         except Exception:
             pass
         time.sleep(VIRTUAL_DISPLAY_SCREEN_CHECK_INTERVAL)
